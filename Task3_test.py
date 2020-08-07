@@ -2,6 +2,7 @@ import numpy as np
 import cv2 as cv
 import itertools
 
+
 def drawRect(frame):
 
     global rect_coord
@@ -15,23 +16,28 @@ def drawRect(frame):
     for  i in rect_coord:
         cv.rectangle(frame,(int(i[0]),int(i[1])),(int(i[2]),int(i[3])),(0,255,0),1)   #drawing the rectangles, where we need to place our hand. Dimensions are 16x16, with 10 pixels space
 
-    return(frame)
+    return (frame)
+
 
 def getROI(frame):   #For getting the region of intrest
+    
+    global rect_coord
 
     roi = np.zeros((2304,2304,3), dtype = frame.dtype) 
 
     j=0
     for i in rect_coord:
-        roi[j:j+16,j:j+16] = frame[i[0]:i[2],i[1]:[3]]
+        roi[j:j+16,j:j+16] = frame[int(i[0]):int(i[2]), int(i[1]):int(i[3])]
         j+=16
     
+    return (roi)
+
         
 def detectHSV(roi,frame):
 
     kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE,(20,20))
 
-    hist = cv.calcHist([roi],[0,1],None,[180,256],[0,180,0,256])   #creating the histogram of Region of intrest
+    hist = cv.calcHist([roi],[0,1],None,[180,256],[0,180,0,256])   #creating the histogram of Region of interest
     cv.normalize(hist, hist,0,255,cv.NORM_MINMAX)                   #normalising the histogram
     dst = cv.calcBackProject([frame], [0, 1], hist, [0, 180, 0, 256], 1)      #back projecting the normalised histogram on our frame
     
@@ -44,12 +50,15 @@ def detectHSV(roi,frame):
 
     return(masked)
 
-#STARTING THE VIDEO CAPTURE#
+# STARTING THE VIDEO CAPTURE#
 
-cap = cv.VideoCapture(0) 
+cap = cv.VideoCapture(0)
 if not cap.isOpened():
     print('Cam\'s not working ')
     exit()
+
+# for selecting skin value in roi:
+hist_flag = 0
 
 while True:
 
@@ -58,8 +67,31 @@ while True:
         print('Can\'t recieve frame, try again later maybe')
         break
 
-    frame = cv.flip(frame,1)
-    hsv = cv.cvtColor(frame,cv.COLOR_BGR2HSV)
+    frame = cv.flip(frame, 1)
+    hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
+
+    # Input the colour range if Enter is pressed:
+    if cv.waitKey(10) & 0xff == 13:
+        roi = getROI(frame)
+        cv.imshow('roi', roi)
+        cv.waitKey(0)
+        cv.destroyWindow('roi')
+        hist_flag = 1
+    else:
+        frame = drawRect(frame)
+        cv.imshow('frame', frame)
+
+    # compute histograms of the colour range input:
+    if hist_flag == 1:
+        mask = detectHSV(roi, frame)
+        cv.imshow('mask', mask)
+
+    k = cv.waitKey(1) & 0xff
+
+    if k == ord('q'):
+        break
+
+cv.destroyAllWindows()
     
 
 
