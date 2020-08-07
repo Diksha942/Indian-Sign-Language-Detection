@@ -7,8 +7,8 @@ def drawRect(frame):
     global rect_coord
 
     h,w,_ = frame.shape
-    coord1 = list(itertools.product([((w/2)-34),((w/2)-8),((w/2)+18)],[((h/2)-34),((h/2)-8),((w/2)+18)]))  #gives us all the upper left corners
-    coord2 = list(itertools.product([((w/2)-18),((w/2)+8),((w/2)+34)],[((h/2)-18),((h/2)+8),((w/2)+34)]))   #gives us all the bottom right corners
+    coord1 = list(itertools.product([((h/2)-34),((h/2)-8),((h/2)+18)],[((w/2)-34),((w/2)-8),((w/2)+18)]))  #gives us all the upper left corners
+    coord2 = list(itertools.product([((h/2)-18),((h/2)+8),((h/2)+34)],[((w/2)-18),((w/2)+8),((w/2)+34)]))   #gives us all the bottom right corners
     
     rect_coord = [i+j for i,j in zip(coord1,coord2)]  #combining all the coordinates, to avoid nesting of for loop
 
