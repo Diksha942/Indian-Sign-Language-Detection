@@ -6,17 +6,23 @@ import math
 def nothing(x):
     pass
 
-def distance(x1,y1, x2,y2):
-    dist = math.sqrt((x1-x2)**2 + (y1-y2)**2)
+
+def distance(x1, y1, x2, y2):
+    dist = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
     return dist
+
+def slope(x1,y1,top):
+    theta = math.degrees(math.atan2(top[1]-y1, top[0]-x1))
+    return theta
+
 
 # creating track bar to find threshold for mask:
 cv.namedWindow('Trackbars')
 cv.resizeWindow('Trackbars', 256, 256)
 cv.createTrackbar("L - H", "Trackbars", 0, 255, nothing)
-cv.createTrackbar("L - S", "Trackbars", 20, 255, nothing)
+cv.createTrackbar("L - S", "Trackbars", 10, 255, nothing)
 cv.createTrackbar("L - V", "Trackbars", 70, 255, nothing)
-cv.createTrackbar("U - H", "Trackbars", 20, 255, nothing)
+cv.createTrackbar("U - H", "Trackbars", 180, 255, nothing)
 cv.createTrackbar("U - S", "Trackbars", 255, 255, nothing)
 cv.createTrackbar("U - V", "Trackbars", 255, 255, nothing)
 
@@ -35,7 +41,6 @@ apex = []
 # defining kernel:
 kernel = np.ones((3, 3), dtype=np.uint8)
 font = cv.FONT_HERSHEY_SIMPLEX
-
 while True:
 
     ret, frame = cap.read()
@@ -70,27 +75,28 @@ while True:
 
     mask_roi = cv.inRange(hsv_roi, lower_col, upper_col)
     mask_roi = cv.morphologyEx(mask_roi, cv.MORPH_CLOSE, kernel)
-    mask_roi = cv.GaussianBlur(mask_roi,(5,5), 100)
+    mask_roi = cv.GaussianBlur(mask_roi, (5, 5), 100)
     masked_roi = cv.bitwise_and(roi, roi, mask=mask_roi)
 
-    if cv.waitKey(10)==13 or flag==1:
+    if cv.waitKey(10) == 13 or flag == 1:
 
         flag = 1
         # finding contours:
         contours, _ = cv.findContours(mask_roi, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 
-        if len(contours)>0:
-            if len(max(contours, key= cv.contourArea)>100):
+        if len(contours) > 0:
+            if len(max(contours, key=cv.contourArea) > 100):
 
                 # finding contour of max area(hand):
                 cnt = max(contours, key=lambda y: cv.contourArea(y))
                 rect = cv.minAreaRect(cnt)
-                [(rx,ry),(w,h),_] = rect
+                [(rx, ry), (w, h), _] = rect
+
                 box = cv.boxPoints(rect)
                 box = np.int0(box)
-                cv.drawContours(roi,[box],0,(0,0,255),1)
-                cv.circle(roi, (int(rx),int(ry)), 2, [255, 0, 0], -1)
-            
+                cv.drawContours(roi, [box], 0, (0, 0, 255), 1)
+                cv.circle(roi, (int(rx), int(ry)), 2, [0, 0, 255], -1)
+
                 # approx the contour a little:
                 epsilon = 0.0005 * cv.arcLength(cnt, True)
                 approx = cv.approxPolyDP(cnt, epsilon, True)
@@ -140,7 +146,7 @@ while True:
                         if angle <= 90 and d > 20:
                             l += 1
                             cv.circle(roi, far, 3, [255, 0, 0], -1)
-                            
+
                         # draw lines around hand
                         cv.line(roi, start, end, [0, 255, 0], 2)
                 except AttributeError:
@@ -150,38 +156,42 @@ while True:
             else:
                 pass
 
+            theta = slope(rx, ry, far)
+
             if l == 1:
                 if arearatio < 14.5:
-                    if 4000<areahull<7200:
+                    if 4000 < areahull < 7200:
                         cv.putText(frame, '0', (0, 50), font, 2, (0, 0, 255), 3, cv.LINE_AA)
                     else:
                         cv.putText(frame, '9', (0, 50), font, 2, (0, 0, 255), 3, cv.LINE_AA)
                 else:
-                    p = distance(apex[0][0],rx,apex[0][1],ry)
+                    '''p = distance(apex[0][0], rx, apex[0][1], ry)
                     q = 100
-                    r = distance(apex[0][0],rx+100,apex[0][1],ry)
+                    r = distance(apex[0][0], rx + 100, apex[0][1], ry)'''
 
-                    theta = np.rad2deg(math.acos((p ** 2 + q ** 2 - r ** 2) / (2 * p * q)))
-
-                    if theta>90:
-                        cv.putText(frame, '6', (0, 50), font, 2, (0, 0, 255), 3, cv.LINE_AA)  #I tried, yeh wala, 1 ad 6 wala, acchese kaam nahi kr rha, please see if u can do this or not
+                    topmost = tuple(cnt[cnt[:,:,1].argmin()][0])
+                    theta = slope(rx,ry,topmost)
+                    if  0 < theta < 90:
+                        cv.putText(frame, '6', (0, 50), font, 2, (0, 0, 255), 3,cv.LINE_AA)
+                    # I tried, yeh wala, 1 ad 6 wala, acchese kaam nahi kr rha, please see if u can do this or not
                     else:
                         cv.putText(frame, '1', (0, 50), font, 2, (0, 0, 255), 3, cv.LINE_AA)
-                    
+
                 '''elif 14.5 <= arearatio < 16.5:
                     cv.putText(frame, '6', (0, 50), font, 2, (0, 0, 255), 3, cv.LINE_AA)
                 elif 16.5 <= arearatio <= 19.5:
                     cv.putText(frame, '1', (0, 50), font, 2, (0, 0, 255), 3, cv.LINE_AA)'''
 
             elif l == 2:
-                if arearatio < 13.5:
-                    cv.putText(frame, '7', (0, 50), font, 2, (0, 0, 255), 3, cv.LINE_AA)
-                else:
+
+                if theta < 0:
                     cv.putText(frame, '2', (0, 50), font, 2, (0, 0, 255), 3, cv.LINE_AA)
+                else:
+                    cv.putText(frame, '7', (0, 50), font, 2, (0, 0, 255), 3, cv.LINE_AA)
 
             elif l == 3:
 
-                if arearatio < 27:
+                if arearatio < 27 :
                     cv.putText(frame, '3', (0, 50), font, 2, (0, 0, 255), 3, cv.LINE_AA)
                 else:
                     cv.putText(frame, '8', (0, 50), font, 2, (0, 0, 255), 3, cv.LINE_AA)
@@ -202,10 +212,12 @@ while True:
 
         cv.imshow('Sign Language Detection', frame)
         cv.imshow('mask', mask_roi)
-        
+
     k = cv.waitKey(1) & 0xff
     if k == ord('q'):
         break
+
+    
 
 cap.release()
 cv.destroyAllWindows()
