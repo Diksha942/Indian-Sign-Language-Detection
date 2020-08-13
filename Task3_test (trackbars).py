@@ -224,7 +224,7 @@ while True:
     k = cv.waitKey(1) & 0xff
     if k == ord('q'):
         break
-
+        
 cap.release()
 cv.destroyAllWindows()
 
