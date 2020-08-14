@@ -26,7 +26,7 @@ ___
   
 ### **Sign Language Detction**  
   
-*STEP 1* : When you run the code, you'll see a white box on the screen. Adjust the upper and lower HSV values using trackbars to ge mask of ur hand and place ur hand inside the white rectangle. Make sure your hand makes a sign of 5 while placing it in the box.  
+*STEP 1* : When you run the code, you'll see a white box on the screen. Adjust the upper and lower HSV values using trackbars to get mask of your hand and then place your hand inside the white rectangle. Make sure your hand **makes a sign of 5 while placing it in the box.** 
   
 ![](Images/2.start.png)  
 
