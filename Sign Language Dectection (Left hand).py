@@ -132,7 +132,6 @@ while True:
                         start = tuple(approx[s][0])
                         end = tuple(approx[e][0])
                         far = tuple(approx[f][0])
-                        pt = (100, 180)
 
                         # finding length of all sides of triangle:
                         a = math.sqrt((end[0] - start[0]) ** 2 + (end[1] - start[1]) ** 2)
