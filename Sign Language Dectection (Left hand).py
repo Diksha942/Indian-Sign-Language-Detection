@@ -27,7 +27,7 @@ cv.createTrackbar("U - V", "Trackbars", 255, 255, nothing)
 
 #we'll require these ahead
 flag = 0   # for the sign lanugage window to appear after pressing enter
-hand = 0   # 0 for left, 1 for right
+
 defect_coord= []   # used in line 180 to store co-ordinates of defects
 far1 = [0,0]   #required in line 170 forstoring changed co-ordinates of defects without changing the original
 
@@ -51,7 +51,6 @@ while True:
 
     #getting the area we wanna work on
     roi = frame[100:440, 100:400]
-    #cv.rectangle(frame,(100,100),(400,440),(255,255,255),3)
 
     #converting them into hsv images for us to work
     hsv_frame = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
@@ -76,32 +75,11 @@ while True:
         mask_frame = cv.morphologyEx(mask_frame, cv.MORPH_CLOSE, kernel)
         mask_frame = cv.GaussianBlur(mask_frame, (5, 5), 100)
         masked_img = cv.bitwise_and(frame, frame, mask=mask_frame)
-        
-        #getting the contour for knowing if it's the right hand or left
-        contour_frame, _ = cv.findContours(mask_frame, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-        if len(contour_frame)>0:
-            cnt_frame = max(contour_frame, key=lambda y: cv.contourArea(y))
-            #taking the extremes, to get the co-ordinates of thumb and little finger
-            leftmost = tuple(cnt_frame[cnt_frame[:,:,0].argmin()][0])
-            rightmost = tuple(cnt_frame[cnt_frame[:,:,0].argmax()][0])
-            
-            #if the leftmost co-ordinate is thumb and rightmost is little finger, then change the flag value
-            if leftmost[1] > rightmost[1]:
-                hand = 1  
-            else:
-                hand=0 
-        else:
-            pass
-        cv.rectangle(masked_img,(100,100),(400,440),(255,255,255),3)
+       
         cv.imshow('Trackbars', masked_img)
         
     else:
         pass
-    '''the code was initially ment just for the left hand. To make it work for the right hand too
-    we flip the frames that we're working on if right hand is detected''' 
-    if hand == 1:
-        hsv_roi = cv.flip(hsv_roi, 1)
-        roi = cv.flip(roi,1)
 
     #creating mask of our hand to get contours
     mask_roi = cv.inRange(hsv_roi, lower_col, upper_col)
@@ -174,52 +152,10 @@ while True:
                         # ignore angles > 80 and ignore points very close to convex hull(they generally come due to noise)
                         if angle <= 80 and d > 20:
                             l += 1
-                            far = list(far)
-                            '''as the defects we have, have co-ordinats of ROI not the frame. 
-                            adding 100 to plot them correctly on the frame'''
-                            far[0]+=100
-                            far[1]+=100
-                            
-                            ''' if it's the right hand, the points and connvex hull would be plot acc.
-                            flipped frame. Flipping the points w.r.t. the central vertical axis of ROI'''
-                            if hand==1:                     
-                                
-                                far1[1]=far[1]  #nre list because we don't want to original values to change
-                                if far[0]>250:
-                                    far1[0] = far[0]-(2*distance(far[0],far[1],250,far[1]))
-                                else:
-                                    far1[0] = far[0]+(2*distance(far[0],far[1],250,far[1]))
-                        
-                                cv.circle(frame,(int(far1[0]),far1[1]), 3, [255,153,51], -1)
-
-                            else:
-                                cv.circle(frame, tuple(far), 3, [255,153,51], -1)
+                            cv.circle(roi, far, 3, [255,153,51], -1)
                             defect_coord.append(far)
 
-                        # draw lines around hand
-                        start = list(start)
-                        end = list(end)
-                        #incrementing them with 100 for the same reason listed above
-                        start[0]+=100
-                        start[1]+=100
-                        end[0]+=100
-                        end[1]+=100
-                        
-                        '''if it's the right hand, flip the convex hull w.r.t 
-                        central vertical axis'''
-                        if hand == 1:
-                            if start[0]>250:
-                                start[0] = start[0]-(2*distance(start[0],start[1],250,start[1]))
-                            else:
-                                start[0] = start[0]+(2*distance(start[0],start[1],250,start[1]))
-                            if end[0]>250:
-                                end[0] = end[0]-(2*distance(end[0],end[1],250,end[1]))
-                            else:
-                                end[0] = end[0]+(2*distance(end[0],end[1],250,end[1]))
-                            cv.line(frame, (int(start[0]),start[1]), (int(end[0]),end[1]), [51,153,255], 2)
-                            
-                        else:
-                            cv.line(frame, tuple(start), tuple(end), [51,153,255], 2)
+                        cv.line(roi, start, end, [51,153,255], 2)
 
                 except AttributeError:
                     pass
@@ -254,7 +190,7 @@ while True:
                 
                 theta = getAngle((400,400),(250,400),defect_coord[-1]) #getting the angle of defects from the horizontal
 
-                if theta>260:
+                if theta>245:
                     cv.putText(frame, '2', (105,435), font, 1, (0, 255, 128), 3, cv.LINE_AA)
                 else:
                     cv.putText(frame, '7', (105,435), font, 1, (0, 255, 128), 3, cv.LINE_AA)
@@ -268,7 +204,7 @@ while True:
                 theta2 = getAngle((400,400),(250,400),defect_coord[-2])
                 #print(theta1, theta2)
             
-                if theta1>255 and theta2>=270:
+                if theta1>235 and theta2>240:
                     cv.putText(frame, '3', (105,435), font,1, (0, 255, 128), 3, cv.LINE_AA)
                 else:
                     cv.putText(frame, '8', (105,435), font, 1, (0, 255, 128), 3, cv.LINE_AA)
@@ -289,14 +225,8 @@ while True:
             cv.putText(frame, 'Put hand in the box', (105,435), font, 0.7, (0, 255, 128), 3, cv.LINE_AA) #if no contour is detected
 
         cv.destroyWindow('Trackbars')
-        if hand == 1:
-            #cv.imshow('Sign Language Detection', cv.flip(roi,1))
-            cv.imshow('mask', cv.flip(mask_roi,1))
-            cv.imshow('Sign Language Detection', frame)
-        else:
-            #cv.imshow('Sign Language Detection', roi)
-            cv.imshow('mask', mask_roi)
-            cv.imshow('Sign Language Detection',frame)
+        cv.imshow('Sign Language Detection', roi)
+        cv.imshow('mask', mask_roi)
     
 
     k = cv.waitKey(1) & 0xff
@@ -305,5 +235,3 @@ while True:
 
 cap.release()
 cv.destroyAllWindows()
-
-
